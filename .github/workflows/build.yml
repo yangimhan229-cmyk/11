@@ -6,6 +6,8 @@ on:
       - 'app/**'
       - '*.gradle'
       - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   build:
