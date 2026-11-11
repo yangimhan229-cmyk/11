@@ -1,9 +1,10 @@
-name: Build HTTP Video Downloader v1.0.9
+name: Build HTTP Video Downloader v1.0.10
 on:
   push:
-    branches: [build/http-video-v1.0.9]
+    branches: [build/http-video-v1.0.10]
     paths:
       - 'build-payload/http-video-v1.0.9.tgz'
+      - 'build-payload/http-video-v1.0.10.patch.gz.base64'
       - '.github/workflows/build-http-video.yml'
   workflow_dispatch:
 
@@ -19,6 +20,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/http-video"
           tar -xzf build-payload/http-video-v1.0.9.tgz -C "$RUNNER_TEMP/http-video"
           test -s "$RUNNER_TEMP/http-video/app/src/main/java/com/tradron/httpvideodownloader/MainActivity.java"
+      - name: Apply v1.0.10 HLS BYTERANGE/fMP4 patch
+        run: |
+          base64 -d build-payload/http-video-v1.0.10.patch.gz.base64 | gzip -dc > "$RUNNER_TEMP/http-video-v110.patch"
+          cd "$RUNNER_TEMP/http-video"
+          patch -p1 --forward < "$RUNNER_TEMP/http-video-v110.patch"
+          grep -q "versionName '1.0.10'" app/build.gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -46,6 +53,6 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: HTTP_Video_Downloader_v1.0.9_debug
+          name: HTTP_Video_Downloader_v1.0.10_debug
           path: ${{ runner.temp }}/http-video/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
