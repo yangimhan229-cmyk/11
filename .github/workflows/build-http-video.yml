@@ -1,0 +1,45 @@
+name: Build HTTP Video Downloader v1.0.9
+on:
+  push:
+    branches: [build/http-video-v1.0.9]
+    paths:
+      - 'build-payload/http-video-v1.0.9.tgz'
+      - '.github/workflows/build-http-video.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore isolated Android source
+        run: |
+          mkdir -p "$RUNNER_TEMP/http-video"
+          tar -xzf build-payload/http-video-v1.0.9.tgz -C "$RUNNER_TEMP/http-video"
+          test -s "$RUNNER_TEMP/http-video/app/src/main/java/com/tradron/httpvideodownloader/MainActivity.java"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build APK
+        run: |
+          cd "$RUNNER_TEMP/http-video"
+          gradle --no-daemon --stacktrace :app:assembleDebug
+      - name: Validate APK
+        run: |
+          test -s "$RUNNER_TEMP/http-video/app/build/outputs/apk/debug/app-debug.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$RUNNER_TEMP/http-video/app/build/outputs/apk/debug/app-debug.apk" | head -6
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HTTP_Video_Downloader_v1.0.9_debug
+          path: ${{ runner.temp }}/http-video/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
